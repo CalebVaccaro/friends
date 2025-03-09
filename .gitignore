@@ -1,0 +1,68 @@
+# Visual Studio specific
+.vscode/
+.vs/
+*.user
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.ide
+
+# Build results
+bin/
+obj/
+out/
+TestResults/
+*.Cache/
+*.Build.cs
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet packages
+*.nupkg
+packages/
+*.snupkg
+.nuget/
+
+# Logs & Debugging
+*.log
+logs/
+*.tlog
+*.trace
+
+# Environment variables
+.env
+
+# Application settings (ignore secrets)
+appsettings.json
+appsettings.*.json
+
+# Publish output
+publish/
+wwwroot/
+node_modules/
+
+# Resharper files
+*.DotSettings.user
+
+# Rider IDE files
+.idea/
+
+# JetBrains Rider
+*.sln.iml
+
+# Docker
+**/[Dd]ockerfile*
+**/[Dd]ocker-compose*
+
+# Entity Framework
+Migrations/
+Database.mdf
+Database.ldf
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
