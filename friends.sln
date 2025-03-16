@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "friends.payments", "friends
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "friends.gps", "friends.gps\friends.gps.csproj", "{1EAF41A9-3CEF-4BA5-835C-FA8B01081E7A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "friends.api", "friends.api\friends.api.csproj", "{8A714751-4671-4474-BD3A-333E2E1C83BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{1EAF41A9-3CEF-4BA5-835C-FA8B01081E7A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1EAF41A9-3CEF-4BA5-835C-FA8B01081E7A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1EAF41A9-3CEF-4BA5-835C-FA8B01081E7A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A714751-4671-4474-BD3A-333E2E1C83BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A714751-4671-4474-BD3A-333E2E1C83BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A714751-4671-4474-BD3A-333E2E1C83BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A714751-4671-4474-BD3A-333E2E1C83BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
