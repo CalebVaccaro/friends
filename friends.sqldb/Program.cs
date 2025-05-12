@@ -1,5 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using SQLitePCL;
 
 Batteries.Init();
@@ -9,10 +8,10 @@ string databasePath = $"{databaseName}.db";
 string connectionString = $"Data Source={databasePath}";
 
 // Ensure the database file does not already exist
-// if (File.Exists(databasePath))
-// {
-//     File.Delete(databasePath);
-// }
+if (!File.Exists(databasePath))
+{
+    File.Create(databasePath);
+}
 
 await using (var connection = new SqliteConnection(connectionString))
 {
