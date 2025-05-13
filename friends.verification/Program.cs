@@ -21,9 +21,6 @@ async Task PostVerification()
     var facePhoto = Convert.ToBase64String(DownladImageAsBytes(facePhotoUrl).Result);
     var documentLicense = Convert.ToBase64String(DownladImageAsBytes(documentLicenseUrl).Result);
 
-    Console.WriteLine(facePhoto);
-    Console.WriteLine(documentLicense); 
-
     var payload = new
     {
         profile = profileId,
@@ -32,15 +29,14 @@ async Task PostVerification()
     };
 
     try{
-        using (var client = new HttpClient()){
-            client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        using var client = new HttpClient();
+        client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8);
-            var respone = await client.PostAsync(apiURL, content);
+        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8);
+        var respone = await client.PostAsync(apiURL, content);
 
-            Console.WriteLine(await respone.Content.ReadAsStringAsync());
-        }
+        Console.WriteLine(await respone.Content.ReadAsStringAsync());
     }
     catch (Exception e){
         Console.WriteLine(e);
@@ -50,8 +46,6 @@ async Task PostVerification()
 
 static async Task<byte[]> DownladImageAsBytes(string url)
 {
-    using (var client = new HttpClient())
-    {
-        return await client.GetByteArrayAsync(url);
-    }
+    using var client = new HttpClient();
+    return await client.GetByteArrayAsync(url);
 }
