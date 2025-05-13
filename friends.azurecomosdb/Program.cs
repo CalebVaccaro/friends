@@ -14,9 +14,9 @@ class Program
             configuration.GetConnectionString("CosmosDbAccountEndpoint") ?? string.Empty,
             configuration.GetConnectionString("CosmosDbAuthKey") ?? string.Empty);
 
-        var database = await cosmosClient.CreateDatabaseIfNotExistsAsync("profiles");
-        var friendsContainer = await database.Database.CreateContainerIfNotExistsAsync("Friends", "/id");
-        var userContainer = await database.Database.CreateContainerIfNotExistsAsync("Users", "/id");
+        var database = await CreateDatabaseIfNotExistsAsync(cosmosClient,"profiles");
+        var friendsContainer = await CreateContainerIfNotExistsAsync(database, "Friends", "/id");
+        var userContainer = await CreateContainerIfNotExistsAsync(database, "Users", "/id");
     }
 
     static async Task<CosmosClient?> CreateCosmosClientAsync(string accountEndpoint, string authKeyOrResourceToken)
