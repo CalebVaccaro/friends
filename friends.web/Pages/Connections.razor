@@ -1,0 +1,140 @@
+@page "/connections"
+
+@inject FriendsApiClient ApiClient
+@inject AppSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Connections</PageTitle>
+
+<section class="mobile-app with-nav">
+    <header class="app-header">
+        <div>
+            <p class="eyebrow">Connections</p>
+            <h1>Your matches.</h1>
+        </div>
+        <button class="ghost-button" @onclick="RefreshAsync" disabled="@isBusy">Refresh</button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <p class="status">@statusMessage</p>
+    }
+
+    <section class="connections dashboard-list">
+        <div class="section-title">
+            <h2>@(Session.CurrentUserName.Length > 0 ? Session.CurrentUserName : "Your") connections</h2>
+            <span>@connections.Count</span>
+        </div>
+
+        @if (isBusy)
+        {
+            <p class="muted">Loading...</p>
+        }
+        else if (connections.Count == 0)
+        {
+            <p class="muted">New matches will land here after both people like each other.</p>
+        }
+        else
+        {
+            @foreach (var connection in connections)
+            {
+                <article class="connection-card">
+                    <div class="avatar">@GetInitials(connection)</div>
+                    <div>
+                        <h3>@connection.Name, @connection.Age</h3>
+                        <p>@connection.LocationLabel</p>
+                        <div class="mini-interests">
+                            @foreach (var interest in connection.Interests.Take(3))
+                            {
+                                <span>@interest</span>
+                            }
+                        </div>
+                    </div>
+                </article>
+            }
+        }
+    </section>
+
+    <nav class="bottom-nav" aria-label="Primary">
+        <a href="/discover">Discover</a>
+        <a class="selected" href="/connections">Connections</a>
+    </nav>
+</section>
+
+@code {
+    private List<UserProfileSummary> connections = [];
+    private bool isBusy = true;
+    private string? statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        await RunAsync(async () =>
+        {
+            if (!Session.HasUser)
+            {
+                var users = (await ApiClient.GetUsersAsync()).ToList();
+
+                if (users.Count == 0)
+                {
+                    users = (await ApiClient.SeedUsersAsync()).ToList();
+                }
+
+                var user = users.FirstOrDefault();
+
+                if (user is null)
+                {
+                    Navigation.NavigateTo("/");
+                    return;
+                }
+
+                Session.SetCurrentUser(user);
+            }
+
+            await LoadConnectionsAsync();
+        });
+    }
+
+    private async Task RefreshAsync()
+    {
+        await RunAsync(LoadConnectionsAsync);
+    }
+
+    private async Task LoadConnectionsAsync()
+    {
+        if (Session.CurrentUserId is not Guid userId)
+        {
+            connections = [];
+            return;
+        }
+
+        connections = (await ApiClient.GetConnectionsAsync(userId)).ToList();
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            isBusy = true;
+            statusMessage = null;
+            await action();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private static string GetInitials(UserProfileSummary user)
+    {
+        return string.Join("", user.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => part[0])).ToUpperInvariant();
+    }
+}

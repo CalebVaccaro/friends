@@ -40,6 +40,8 @@ appsettings.*.json
 # Publish output
 publish/
 wwwroot/
+!friends.web/wwwroot/
+!friends.web/wwwroot/**
 node_modules/
 
 # Resharper files
