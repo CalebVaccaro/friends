@@ -1,0 +1,164 @@
+@page "/"
+
+@inject FriendsApiClient ApiClient
+@inject AppSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Friends</PageTitle>
+
+<section class="mobile-app">
+    <header class="app-header">
+        <div>
+            <p class="eyebrow">Friends</p>
+            <h1>Start here.</h1>
+        </div>
+        <button class="ghost-button" @onclick="SeedAsync" disabled="@isBusy">Seed</button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <p class="status">@statusMessage</p>
+    }
+
+    <section class="auth-panel">
+        <h2>Log in for now</h2>
+        <p>Pick a test profile until real auth is connected.</p>
+
+        <label for="current-user">Profile</label>
+        <select id="current-user" @bind="selectedUserId">
+            @foreach (var user in users)
+            {
+                <option value="@user.Id">@user.Name - @user.LocationLabel</option>
+            }
+        </select>
+
+        <button class="primary-action" @onclick="ContinueAsync" disabled="@isBusy || selectedUserId == Guid.Empty">Continue</button>
+    </section>
+
+    <section class="auth-panel">
+        <h2>Create profile</h2>
+        <p>Enough to test onboarding, discovery, and matching.</p>
+
+        <label for="name">Name</label>
+        <input id="name" @bind="newUser.Name" placeholder="Your name" />
+
+        <label for="email">Email</label>
+        <input id="email" @bind="newUser.Email" placeholder="you@example.com" />
+
+        <div class="field-grid">
+            <div>
+                <label for="age">Age</label>
+                <input id="age" type="number" @bind="newUser.Age" />
+            </div>
+            <div>
+                <label for="location">Location</label>
+                <input id="location" @bind="newUser.LocationLabel" placeholder="Brooklyn, NY" />
+            </div>
+        </div>
+
+        <label for="bio">Bio</label>
+        <textarea id="bio" @bind="newUser.Bio" rows="4" placeholder="A quick intro"></textarea>
+
+        <label for="interests">Interests</label>
+        <input id="interests" @bind="interestText" placeholder="coffee, hiking, museums" />
+
+        <button class="primary-action" @onclick="CreateUserAsync" disabled="@isBusy">Create and continue</button>
+    </section>
+</section>
+
+@code {
+    private List<User> users = [];
+    private Guid selectedUserId;
+    private bool isBusy = true;
+    private string? statusMessage;
+    private string interestText = "coffee, parks, music";
+    private UserRequest newUser = new()
+    {
+        Email = $"friend-{Guid.NewGuid():N}@example.com",
+        Age = 25,
+        LocationLabel = "Brooklyn, NY",
+        Latitude = 40.6782,
+        Longitude = -73.9442
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await LoadUsersAsync(seedIfEmpty: true);
+        });
+    }
+
+    private async Task SeedAsync()
+    {
+        await RunAsync(async () =>
+        {
+            await ApiClient.SeedUsersAsync();
+            await LoadUsersAsync(seedIfEmpty: false);
+            statusMessage = "Test profiles are ready.";
+        });
+    }
+
+    private async Task ContinueAsync()
+    {
+        await RunAsync(() =>
+        {
+            var user = users.FirstOrDefault(user => user.Id == selectedUserId);
+
+            if (user is null)
+            {
+                statusMessage = "Pick a profile first.";
+                return Task.CompletedTask;
+            }
+
+            Session.SetCurrentUser(user);
+            Navigation.NavigateTo("/discover");
+            return Task.CompletedTask;
+        });
+    }
+
+    private async Task CreateUserAsync()
+    {
+        await RunAsync(async () =>
+        {
+            newUser.Interests = interestText
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var created = await ApiClient.CreateUserAsync(newUser);
+            Session.SetCurrentUser(created);
+            Navigation.NavigateTo("/discover");
+        });
+    }
+
+    private async Task LoadUsersAsync(bool seedIfEmpty)
+    {
+        users = (await ApiClient.GetUsersAsync()).ToList();
+
+        if (users.Count == 0 && seedIfEmpty)
+        {
+            users = (await ApiClient.SeedUsersAsync()).ToList();
+        }
+
+        selectedUserId = Session.CurrentUserId ?? users.FirstOrDefault()?.Id ?? Guid.Empty;
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            isBusy = true;
+            statusMessage = null;
+            await action();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

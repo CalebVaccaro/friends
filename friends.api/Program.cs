@@ -9,6 +9,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LocalFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5033", "https://localhost:7296")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
@@ -43,6 +53,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("LocalFrontend");
 
 var users = app.MapGroup("/api/users").WithTags("Users");
 

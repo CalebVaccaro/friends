@@ -1,0 +1,230 @@
+@page "/discover"
+
+@inject FriendsApiClient ApiClient
+@inject AppSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Friends</PageTitle>
+
+<section class="mobile-app">
+    <header class="app-header">
+        <div>
+            <p class="eyebrow">Friends</p>
+            <h1>Find your people.</h1>
+        </div>
+        <button class="ghost-button" @onclick="RefreshAsync" disabled="@isBusy">Refresh</button>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <p class="status">@statusMessage</p>
+    }
+
+    <section class="control-card">
+        <label for="current-user">Testing as</label>
+        <div class="control-row">
+            <select id="current-user" @bind="currentUserId" @bind:after="ChangeUserAsync">
+                @foreach (var user in users)
+                {
+                    <option value="@user.Id">@user.Name - @user.LocationLabel</option>
+                }
+            </select>
+            <button @onclick="GoHome">Account</button>
+        </div>
+    </section>
+
+    <section class="control-card">
+        <label for="radius">Distance</label>
+        <div class="chip-row" id="radius">
+            @foreach (var option in radiusOptions)
+            {
+                <button class="chip @(selectedRadius == option ? "selected" : string.Empty)" @onclick="() => SetRadiusAsync(option)" disabled="@isBusy">
+                    @(option is null ? "Any" : $"{option} mi")
+                </button>
+            }
+        </div>
+    </section>
+
+    @if (isBusy)
+    {
+        <section class="profile-card empty-card">
+            <p>Loading...</p>
+        </section>
+    }
+    else if (CurrentCandidate is null)
+    {
+        <section class="profile-card empty-card">
+            <p>No more people nearby.</p>
+            <button @onclick="RefreshAsync">Refresh</button>
+        </section>
+    }
+    else
+    {
+        <section class="profile-card">
+            <div class="profile-art">
+                <span>@GetInitials(CurrentCandidate.User)</span>
+            </div>
+
+            <div class="profile-content">
+                <div class="profile-title">
+                    <div>
+                        <h2>@CurrentCandidate.User.Name, @CurrentCandidate.User.Age</h2>
+                        <p>@CurrentCandidate.User.LocationLabel</p>
+                    </div>
+                    @if (CurrentCandidate.DistanceMiles is not null)
+                    {
+                        <span>@Math.Round(CurrentCandidate.DistanceMiles.Value) mi</span>
+                    }
+                </div>
+
+                <p class="bio">@CurrentCandidate.User.Bio</p>
+
+                <div class="interests">
+                    @foreach (var interest in CurrentCandidate.User.Interests.Take(5))
+                    {
+                        <span>@interest</span>
+                    }
+                </div>
+
+                @if (CurrentCandidate.SharedInterests.Count > 0)
+                {
+                    <p class="shared">Also into @string.Join(", ", CurrentCandidate.SharedInterests)</p>
+                }
+            </div>
+        </section>
+
+        <section class="swipe-actions">
+            <button class="pass-button" @onclick="() => SwipeAsync(SwipeAction.Pass)" disabled="@isBusy">Pass</button>
+            <button class="like-button" @onclick="() => SwipeAsync(SwipeAction.Like)" disabled="@isBusy">Like</button>
+        </section>
+    }
+    <nav class="bottom-nav" aria-label="Primary">
+        <a class="selected" href="/discover">Discover</a>
+        <a href="/connections">Connections</a>
+    </nav>
+</section>
+
+@code {
+    private readonly int?[] radiusOptions = [null, 5, 15, 50];
+    private List<User> users = [];
+    private List<UserDiscoveryResult> candidates = [];
+    private Guid currentUserId;
+    private int? selectedRadius;
+    private bool isBusy = true;
+    private string? statusMessage;
+
+    private UserDiscoveryResult? CurrentCandidate => candidates.FirstOrDefault();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        await RunAsync(async () =>
+        {
+            users = (await ApiClient.GetUsersAsync()).ToList();
+
+            if (users.Count == 0)
+            {
+                users = (await ApiClient.SeedUsersAsync()).ToList();
+            }
+
+            currentUserId = Session.CurrentUserId ?? users.FirstOrDefault()?.Id ?? Guid.Empty;
+            SetSessionUser();
+            await LoadForCurrentUserAsync();
+        });
+    }
+
+    private async Task LoadForCurrentUserAsync()
+    {
+        if (currentUserId == Guid.Empty)
+        {
+            candidates = [];
+            return;
+        }
+
+        candidates = (await ApiClient.DiscoverAsync(currentUserId, selectedRadius)).ToList();
+    }
+
+    private async Task ChangeUserAsync()
+    {
+        SetSessionUser();
+        await LoadForCurrentUserAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await RunAsync(LoadForCurrentUserAsync);
+    }
+
+    private async Task SetRadiusAsync(int? radius)
+    {
+        selectedRadius = radius;
+        await RefreshAsync();
+    }
+
+    private async Task SwipeAsync(SwipeAction action)
+    {
+        if (CurrentCandidate is null)
+        {
+            return;
+        }
+
+        var candidate = CurrentCandidate;
+
+        await RunAsync(async () =>
+        {
+            var result = await ApiClient.SwipeAsync(currentUserId, candidate.User.Id, action);
+            candidates.Remove(candidate);
+
+            if (result.IsMatch && result.MatchedUser is not null)
+            {
+                statusMessage = $"You and {result.MatchedUser.Name} connected.";
+            }
+            else
+            {
+                statusMessage = action == SwipeAction.Like ? "Like sent." : "Passed.";
+            }
+        });
+    }
+
+    private void SetSessionUser()
+    {
+        var user = users.FirstOrDefault(user => user.Id == currentUserId);
+
+        if (user is not null)
+        {
+            Session.SetCurrentUser(user);
+        }
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task RunAsync(Func<Task> action)
+    {
+        try
+        {
+            isBusy = true;
+            statusMessage = null;
+            await action();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private static string GetInitials(UserProfileSummary user)
+    {
+        return string.Join("", user.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => part[0])).ToUpperInvariant();
+    }
+}
