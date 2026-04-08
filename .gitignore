@@ -59,6 +59,7 @@ node_modules/
 Migrations/
 Database.mdf
 Database.ldf
+*.db
 
 # Temporary files
 *.tmp

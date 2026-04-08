@@ -1,6 +1,74 @@
 @friends.api_HostAddress = http://localhost:5138
 
-GET {{friends.api_HostAddress}}/weatherforecast/
+GET {{friends.api_HostAddress}}/api/users
+Accept: application/json
+
+###
+
+POST {{friends.api_HostAddress}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Maya",
+  "email": "maya@example.com",
+  "age": 28,
+  "bio": "Coffee walks, board games, and weekend hikes.",
+  "locationLabel": "Denver, CO",
+  "latitude": 39.7392,
+  "longitude": -104.9903,
+  "photoUrl": "https://example.com/maya.jpg",
+  "photoUrls": ["https://example.com/maya.jpg", "https://example.com/maya-2.jpg"],
+  "interests": ["hiking", "coffee", "board games"]
+}
+
+###
+
+@userId = 00000000-0000-0000-0000-000000000001
+@targetUserId = 00000000-0000-0000-0000-000000000002
+
+POST {{friends.api_HostAddress}}/api/users/{{userId}}/swipes
+Content-Type: application/json
+
+{
+  "targetUserId": "{{targetUserId}}",
+  "action": "Like"
+}
+
+###
+
+GET {{friends.api_HostAddress}}/api/users/{{userId}}/connections
+Accept: application/json
+
+###
+
+GET {{friends.api_HostAddress}}/api/users/{{userId}}/discover?radiusMiles=25&interests=hiking,coffee
+Accept: application/json
+
+###
+
+POST {{friends.api_HostAddress}}/api/test/users
+Accept: application/json
+
+###
+
+GET {{friends.api_HostAddress}}/api/me/discover?radiusMiles=25&interests=hiking,coffee
+X-User-Id: {{userId}}
+Accept: application/json
+
+###
+
+POST {{friends.api_HostAddress}}/api/me/swipes
+X-User-Id: {{userId}}
+Content-Type: application/json
+
+{
+  "targetUserId": "{{targetUserId}}",
+  "action": "Like"
+}
+
+###
+
+DELETE {{friends.api_HostAddress}}/api/test/data
 Accept: application/json
 
 ###
